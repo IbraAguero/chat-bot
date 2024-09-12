@@ -1,36 +1,99 @@
 import { useState } from "react";
 
-const steps = [
-  {
-    message: "¡Hola! ¿Cómo puedo ayudarte?",
-    options: [
-      { label: "Ver productos", nextStep: 1 },
-      { label: "Hablar con soporte", nextStep: 2 },
-    ],
+const TRIGGERS = {
+  saludo: ["hola", "buenos dias", "buenas tardes"],
+  despedida: ["adios", "hasta luego"],
+  opciones: ["opciones", "ver mas"],
+};
+
+const FLOWS = {
+  saludo: {
+    message: "¡Hola! soy un bot, ¿Cómo te puedo ayudar?",
+    options: ["Ver opciones", "Nada, gracias"],
+    nextFlows: { "Ver opciones": "opciones", "Nada, gracias": null },
   },
-];
+  opciones: {
+    message: "Aquí tienes las opciones:",
+    options: ["Clima", "Noticias", "Soporte Técnico"],
+    nextFlows: {
+      Clima: "clima",
+      Noticias: "noticias",
+      "Soporte Técnico": "soporte",
+    },
+  },
+  clima: { message: "El clima hoy es soleado.", options: [], nextFlows: {} },
+  noticias: {
+    message: "Aquí están las noticias del día.",
+    options: [],
+    nextFlows: {},
+  },
+  soporte: {
+    message: "Conéctandote al soporte técnico...",
+    options: [],
+    nextFlows: {},
+  },
+};
+
+const findTrigger = (message) => {
+  for (const trigger in TRIGGERS) {
+    if (
+      TRIGGERS[trigger].some((word) => message.toLowerCase().includes(word))
+    ) {
+      return trigger;
+    }
+  }
+  return null;
+};
+
+const initialMessage = {
+  sender: "bot",
+  message: "Hola, Soy un bot en que nesecitas que te ayude",
+};
 
 function App() {
-  const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hola, soy un bot" },
-    {
-      sender: "user",
-      text: "Hola, como estas mi nombre es ibrahim",
-    },
-  ]);
+  const [flow, setFlow] = useState();
+  const [messages, setMessages] = useState([initialMessage]);
   const [input, setInput] = useState("");
 
-  console.log(messages[messages.length - 1]);
-
-  const sendMessageUser = () => {
-    setMessages((prevState) => [...prevState, { sender: "user", text: input }]);
-    setInput("");
-  };
-  const sendMessageBot = () => {
-    if (messages[messages.length - 1]) {
+  const handleClick = (nextStep) => {
+    const newFlow = FLOWS[nextStep];
+    if (newFlow) {
+      setFlow(nextStep);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: newFlow.message },
+      ]);
     }
-    setMessages((prevState) => [...prevState, { sender: "bot", text: input }]);
-    setInput("");
+  };
+
+  const sendMessage = () => {
+    if (input.trim()) {
+      const userMessage = input.trim();
+      setMessages([...messages, { text: userMessage, sender: "user" }]);
+      setInput("");
+
+      const trigger = findTrigger(userMessage);
+      if (trigger) {
+        botResponse(trigger);
+      } else {
+        setMessages([
+          ...messages,
+          { text: userMessage, sender: "user" },
+          { text: "No entiendo lo que me dices", sender: "bot" },
+        ]);
+      }
+    }
+  };
+
+  const botResponse = (trigger) => {
+    const newFlow = FLOWS[trigger];
+    if (newFlow) {
+      setFlow(trigger);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: newFlow.message },
+      ]);
+    }
   };
 
   return (
@@ -49,14 +112,26 @@ function App() {
                 <div
                   className={`${
                     message.sender === "bot"
-                      ? "bg-gray-300 text-black"
-                      : "bg-blue-500 text-white"
-                  } rounded-lg p-2 text-sm max-w-[75%] mb-1 break-words`}
+                      ? "bg-gray-300 text-black rounded-bl-none"
+                      : "bg-blue-500 text-white rounded-br-none"
+                  } rounded-xl p-2 text-sm max-w-[75%] mb-1 break-words`}
                 >
                   {message.text}
                 </div>
               </div>
             ))}
+            <div className="mb-1 flex gap-2">
+              {flow &&
+                FLOWS[flow]?.options?.map((option, index) => (
+                  <button
+                    key={option}
+                    onClick={() => handleClick(FLOWS[flow].nextFlows[option])}
+                    className="p-1 px-2 text-sm bg-blue-600 rounded-3xl text-white hover:bg-blue-700 transition-colors"
+                  >
+                    {option}
+                  </button>
+                ))}
+            </div>
           </div>
           <div className="flex gap-2">
             <input
@@ -66,7 +141,7 @@ function App() {
               className="flex-grow border border-black rounded-lg p-1 px-3 text-sm"
             />
             <button
-              onClick={sendMessageUser}
+              onClick={sendMessage}
               className="border border-black rounded-lg p-1 px-3 text-sm mt-auto"
             >
               Enviar
