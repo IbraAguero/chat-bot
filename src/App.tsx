@@ -1,73 +1,120 @@
-import { useState } from "react";
-
-const TRIGGERS = {
-  saludo: ["hola", "buenos dias", "buenas tardes"],
-  despedida: ["adios", "hasta luego"],
-  opciones: ["opciones", "ver mas"],
-};
+import EmojiPicker from "emoji-picker-react";
+import { useEffect, useRef, useState } from "react";
 
 const FLOWS = {
-  saludo: {
-    message: "¡Hola! soy un bot, ¿Cómo te puedo ayudar?",
-    options: ["Ver opciones", "Nada, gracias"],
-    nextFlows: { "Ver opciones": "opciones", "Nada, gracias": null },
-  },
-  opciones: {
-    message: "Aquí tienes las opciones:",
-    options: ["Clima", "Noticias", "Soporte Técnico"],
+  bienvenida: {
+    message: ["¡Hola! soy un bot", "¿Cómo te puedo ayudar?"],
+    options: ["Ver productos", "Hablar con soporte"],
+    triggers: ["hola", "buenos dias", "buen dia", "buenas tardes"],
     nextFlows: {
-      Clima: "clima",
-      Noticias: "noticias",
-      "Soporte Técnico": "soporte",
+      "Ver productos": "productos",
+      "Hablar con soporte": "soporte",
     },
   },
-  clima: { message: "El clima hoy es soleado.", options: [], nextFlows: {} },
-  noticias: {
-    message: "Aquí están las noticias del día.",
+  productos: {
+    message: ["Aquí tienes las opciones de productos:"],
+    options: ["Buzos", "Remeras", "Pantalones", "Camperas"],
+    triggers: ["productos", "ver productos"],
+    nextFlows: {
+      Buzos: "buzos",
+      Remeras: "remeras",
+      Pantalones: "pantalones",
+      Camperas: "camperas",
+    },
+  },
+  camperas: {
+    message: ["Has seleccionado Camperas."],
     options: [],
+    triggers: ["camperas"],
+    nextFlows: {},
+  },
+  buzos: {
+    message: ["Has seleccionado Buzos."],
+    options: [],
+    triggers: ["buzos"],
+    nextFlows: {},
+  },
+  remeras: {
+    message: ["Has seleccionado Remeras."],
+    options: [],
+    triggers: ["remeras"],
     nextFlows: {},
   },
   soporte: {
-    message: "Conéctandote al soporte técnico...",
+    message: ["Conectándote al soporte técnico..."],
     options: [],
+    triggers: ["soporte", "hablar con soporte"],
     nextFlows: {},
+  },
+  despedida: {
+    message: ["Hasta luego, espero que tengas un buen día."],
+    options: [],
+    triggers: ["adios", "hasta luego", "chau"],
+    nextFlows: {},
+  },
+  desconocido: {
+    message: [
+      "No entiendo lo que me dices",
+      "prueba con algunas de estas opciones.",
+    ],
+    options: ["Ver productos", "Hablar con soporte"],
+    nextFlows: {
+      "Ver productos": "productos",
+      "Hablar con soporte": "soporte",
+    },
   },
 };
 
-const findTrigger = (message) => {
-  for (const trigger in TRIGGERS) {
+const findTrigger = (message: string) => {
+  for (const flowKey in FLOWS) {
+    const flow = FLOWS[flowKey];
     if (
-      TRIGGERS[trigger].some((word) => message.toLowerCase().includes(word))
+      flow.triggers &&
+      flow.triggers.some((word: string) => message.toLowerCase().includes(word))
     ) {
-      return trigger;
+      return flowKey;
     }
   }
   return null;
 };
 
-const initialMessage = {
-  sender: "bot",
-  message: "Hola, Soy un bot en que nesecitas que te ayude",
-};
-
 function App() {
-  const [flow, setFlow] = useState();
-  const [messages, setMessages] = useState([initialMessage]);
-  const [input, setInput] = useState("");
+  const [flow, setFlow] = useState<string | null>("bienvenida");
+  const [showEmojis, setShowEmojis] = useState(false);
+  const [messages, setMessages] = useState([
+    { sender: "bot", text: FLOWS.bienvenida.message[0] },
+  ]);
+  const [input, setInput] = useState<string>("");
+  const [showOptions, setShowOptions] = useState<boolean>(false);
 
-  const handleClick = (nextStep) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    if (messages) {
+      scrollToBottom();
+    }
+  }, [messages, flow, showOptions]);
+
+  const handleClick = (option: string) => {
+    const nextStep = FLOWS[flow].nextFlows[option];
     const newFlow = FLOWS[nextStep];
     if (newFlow) {
+      setMessages((prev) => [...prev, { sender: "user", text: option }]);
+      setShowOptions(false);
       setFlow(nextStep);
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: newFlow.message },
-      ]);
+      addMessagesWithDelay(newFlow.message);
     }
   };
 
   const sendMessage = () => {
     if (input.trim()) {
+      setFlow(null);
       const userMessage = input.trim();
       setMessages([...messages, { text: userMessage, sender: "user" }]);
       setInput("");
@@ -76,80 +123,111 @@ function App() {
       if (trigger) {
         botResponse(trigger);
       } else {
-        setMessages([
-          ...messages,
-          { text: userMessage, sender: "user" },
-          { text: "No entiendo lo que me dices", sender: "bot" },
-        ]);
+        setFlow("desconocido");
+        botResponse("desconocido");
       }
     }
   };
 
-  const botResponse = (trigger) => {
+  const botResponse = (trigger: string) => {
     const newFlow = FLOWS[trigger];
     if (newFlow) {
+      setShowOptions(false);
+      addMessagesWithDelay(newFlow.message);
       setFlow(trigger);
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: newFlow.message },
-      ]);
     }
   };
 
+  const addMessagesWithDelay = (messagesArray: string[]) => {
+    messagesArray.forEach((message, index) => {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { sender: "bot", text: message }]);
+
+        if (index === messagesArray.length - 1) {
+          setTimeout(() => {
+            setShowOptions(true);
+          }, 500);
+        }
+      }, 1000 * (index + 1));
+    });
+  };
+
+  const handleSubmit = (event: Event) => {
+    event.preventDefault();
+    sendMessage();
+  };
+
   return (
-    <>
-      <main className="grid place-content-center h-screen">
-        <h1 className="text-center">CHAT-BOT</h1>
-        <section className="w-[350px] h-[500px] border border-black rounded-3xl flex flex-col p-5">
-          <div className="flex-grow">
-            {messages.map((message, index) => (
+    <main className="grid place-content-center h-screen">
+      <section className="w-[350px] h-[500px] rounded-xl shadow-[0px_20px_60px_rgba(0,0,0,_0.5)] flex flex-col">
+        <h1 className="p-4 px-6 rounded-t-xl font-bold text-white text-xl bg-gradient-to-r from-cyan-500 to-blue-500">
+          Bot Ibra
+        </h1>
+        <div className="py-4 px-4 flex-grow overflow-y-auto rounded-md flex flex-col gap-2">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                message.sender === "bot" ? "justify-start" : "justify-end"
+              }`}
+            >
               <div
-                key={index}
-                className={`flex ${
-                  message.sender === "bot" ? "justify-start" : "justify-end"
-                }`}
+                className={`animation ${
+                  message.sender === "bot"
+                    ? "bg-gray-300 text-black rounded-bl-none"
+                    : "bg-blue-500 text-white rounded-br-none"
+                } rounded-lg p-2 px-3 shadow-[0px_4px_12px_rgba(0,0,0,_0.3)] text-sm font-normal max-w-[85%] break-words`}
               >
-                <div
-                  className={`${
-                    message.sender === "bot"
-                      ? "bg-gray-300 text-black rounded-bl-none"
-                      : "bg-blue-500 text-white rounded-br-none"
-                  } rounded-xl p-2 text-sm max-w-[75%] mb-1 break-words`}
-                >
-                  {message.text}
-                </div>
+                {message.text}
               </div>
-            ))}
-            <div className="mb-1 flex gap-2">
+            </div>
+          ))}
+          {showOptions && (
+            <div className="flex flex-col gap-2">
               {flow &&
-                FLOWS[flow]?.options?.map((option, index) => (
+                FLOWS[flow]?.options?.map((option) => (
                   <button
                     key={option}
-                    onClick={() => handleClick(FLOWS[flow].nextFlows[option])}
-                    className="p-1 px-2 text-sm bg-blue-600 rounded-3xl text-white hover:bg-blue-700 transition-colors"
+                    onClick={() => handleClick(option)}
+                    className="animation p-2 px-5 w-fit text-sm font-medium rounded-lg border border-blue-400 text-blue-400 hover:text-white hover:bg-blue-400 transition-colors"
                   >
                     {option}
                   </button>
                 ))}
             </div>
-          </div>
-          <div className="flex gap-2">
+          )}
+          <div ref={messagesEndRef}></div>
+        </div>
+        <div>
+          <form
+            onSubmit={(e) => handleSubmit(e)}
+            className="flex gap-2 pt-2 border-t-2 border-blue-600 p-3"
+          >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               type="text"
-              className="flex-grow border border-black rounded-lg p-1 px-3 text-sm"
+              placeholder="Escribí acá.."
+              className="flex-grow rounded-lg text-sm font-medium px-2 outline-none"
             />
             <button
-              onClick={sendMessage}
-              className="border border-black rounded-lg p-1 px-3 text-sm mt-auto"
+              className="border border-black rounded-full p-1 text-sm mt-auto"
+              onClick={() => setShowEmojis(!showEmojis)}
             >
-              Enviar
+              😀
             </button>
+          </form>
+          <div className="relative left-[200px] top-1">
+            <EmojiPicker
+              open={showEmojis}
+              height={350}
+              searchDisabled
+              skinTonesDisabled
+            />
           </div>
-        </section>
-      </main>
-    </>
+        </div>
+      </section>
+    </main>
   );
 }
 
