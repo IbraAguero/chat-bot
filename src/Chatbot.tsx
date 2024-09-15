@@ -89,6 +89,12 @@ const FLOWS: Record<string, Flow> = {
       "Volver al menú principal": "bienvenida",
     },
   },
+  isa: {
+    message: ["la isa es un vaquillon🐄"],
+    options: [],
+    triggers: ["isa", "isabella", "Isa"],
+    nextFlows: {},
+  },
   soporte: {
     message: ["Conectándote al soporte técnico..."],
     options: [],
