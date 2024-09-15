@@ -10,45 +10,84 @@ type Flow = {
   triggers?: string[];
   nextFlows: Record<string, string>;
 };
-
 const FLOWS: Record<string, Flow> = {
   bienvenida: {
-    message: ["¡Hola! soy un bot", "¿Cómo te puedo ayudar?"],
-    options: ["Ver productos", "Hablar con soporte"],
-    triggers: ["hola", "buenos dias", "buen dia", "buenas tardes"],
+    message: ["¡Hola! Soy el bot de Ibra. ¿Cómo te puedo ayudar hoy?"],
+    options: ["Ver información personal", "Hablar con soporte", "Despedirse"],
+    triggers: ["hola", "buenos días", "buenas tardes"],
     nextFlows: {
-      "Ver productos": "productos",
+      "Ver información personal": "informacion_personal",
       "Hablar con soporte": "soporte",
+      Despedirse: "despedida",
     },
   },
-  productos: {
-    message: ["Aquí tienes las opciones de productos:"],
-    options: ["Buzos", "Remeras", "Pantalones", "Camperas"],
-    triggers: ["productos", "ver productos"],
+  informacion_personal: {
+    message: ["Aquí tienes más información sobre mí:"],
+    options: [
+      "Edad",
+      "Educación",
+      "Deportes",
+      "Objetivo de entrenamiento",
+      "Volver al menú principal",
+    ],
+    triggers: ["información personal", "sobre ti", "más sobre ti"],
     nextFlows: {
-      Buzos: "buzos",
-      Remeras: "remeras",
-      Pantalones: "pantalones",
-      Camperas: "camperas",
+      Edad: "edad",
+      Educación: "educacion",
+      Deportes: "deportes",
+      "Objetivo de entrenamiento": "objetivo_entrenamiento",
+      "Volver al menú principal": "bienvenida",
     },
   },
-  camperas: {
-    message: ["Has seleccionado Camperas."],
-    options: [],
-    triggers: ["camperas"],
-    nextFlows: {},
+  edad: {
+    message: ["Tengo 22 años."],
+    options: ["Volver a la información personal", "Volver al menú principal"],
+    triggers: ["edad"],
+    nextFlows: {
+      "Volver a la información personal": "informacion_personal",
+      "Volver al menú principal": "bienvenida",
+    },
   },
-  buzos: {
-    message: ["Has seleccionado Buzos."],
-    options: [],
-    triggers: ["buzos"],
-    nextFlows: {},
+  educacion: {
+    message: ["Me gradué como técnico en programación."],
+    options: ["Volver a la información personal", "Volver al menú principal"],
+    triggers: ["educación", "técnico en programación"],
+    nextFlows: {
+      "Volver a la información personal": "informacion_personal",
+      "Volver al menú principal": "bienvenida",
+    },
   },
-  remeras: {
-    message: ["Has seleccionado Remeras."],
-    options: [],
-    triggers: ["remeras"],
-    nextFlows: {},
+  deportes: {
+    message: ["Practico powerlifting como deporte."],
+    options: ["Volver a la información personal", "Volver al menú principal"],
+    triggers: ["deportes", "powerlifting"],
+    nextFlows: {
+      "Volver a la información personal": "informacion_personal",
+      "Volver al menú principal": "bienvenida",
+    },
+  },
+  objetivo_entrenamiento: {
+    message: ["Mi objetivo actual es alcanzar los 200 kg en sentadilla."],
+    options: ["Volver a la información personal", "Volver al menú principal"],
+    triggers: ["objetivo de entrenamiento", "sentadilla"],
+    nextFlows: {
+      "Volver a la información personal": "informacion_personal",
+      "Volver al menú principal": "bienvenida",
+    },
+  },
+  proyectos: {
+    message: [
+      "Actualmente, tengo varios proyectos en marcha:",
+      "1. Un chatbot para Express Telecomunicaciones que simula interacciones con un asistente virtual.",
+      "2. Un proyecto de tic-tac-toe en modo multijugador.",
+      "3. Un sistema para gestionar el inventario de infraestructura IT en una empresa.",
+    ],
+    options: ["Volver a la información personal", "Volver al menú principal"],
+    triggers: ["proyectos", "más sobre proyectos"],
+    nextFlows: {
+      "Volver a la información personal": "informacion_personal",
+      "Volver al menú principal": "bienvenida",
+    },
   },
   soporte: {
     message: ["Conectándote al soporte técnico..."],
@@ -57,20 +96,21 @@ const FLOWS: Record<string, Flow> = {
     nextFlows: {},
   },
   despedida: {
-    message: ["Hasta luego, espero que tengas un buen día."],
+    message: ["Hasta luego, ¡espero que tengas un gran día!"],
     options: [],
-    triggers: ["adios", "hasta luego", "chau"],
+    triggers: ["adiós", "hasta luego", "chau"],
     nextFlows: {},
   },
   desconocido: {
     message: [
-      "No entiendo lo que me dices",
-      "prueba con algunas de estas opciones.",
+      "No entiendo lo que me dices.",
+      "Intenta con algunas de estas opciones.",
     ],
-    options: ["Ver productos", "Hablar con soporte"],
+    options: ["Ver información personal", "Hablar con soporte", "Despedirse"],
     nextFlows: {
-      "Ver productos": "productos",
+      "Ver información personal": "informacion_personal",
       "Hablar con soporte": "soporte",
+      Despedirse: "despedida",
     },
   },
 };
