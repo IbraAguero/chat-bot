@@ -4,7 +4,14 @@ import CloseIcon from "./CloseIcon";
 import MessageIcon from "./MessageIcon";
 import { AnimatePresence, motion } from "framer-motion";
 
-const FLOWS = {
+type Flow = {
+  message: string[];
+  options?: string[];
+  triggers?: string[];
+  nextFlows: Record<string, string>;
+};
+
+const FLOWS: Record<string, Flow> = {
   bienvenida: {
     message: ["¡Hola! soy un bot", "¿Cómo te puedo ayudar?"],
     options: ["Ver productos", "Hablar con soporte"],
@@ -86,8 +93,8 @@ type Message = {
   text: string;
 };
 
-function Chatbot({ initialFlow }) {
-  const [flow, setFlow] = useState<string | null>(initialFlow);
+function Chatbot({ initialFlow }: { initialFlow: string }) {
+  const [flow, setFlow] = useState<string>(initialFlow);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>("");
   const [showChat, setShowChat] = useState<boolean>(false);
@@ -124,7 +131,7 @@ function Chatbot({ initialFlow }) {
 
   const sendMessage = () => {
     if (input.trim()) {
-      setFlow(null);
+      setFlow("");
       const userMessage = input.trim();
       setMessages([...messages, { text: userMessage, sender: "user" }]);
       setInput("");
